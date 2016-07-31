@@ -18,15 +18,15 @@
         {\
             if (LOG_OUTPUT_DEBUG_PREFIX)\
             {\
-                Serial.print("[LOG Debug: ");\
-                Serial.print((const char*)__FILE__);\
-                Serial.print(",");\
-                Serial.print((unsigned int)__LINE__);\
-                Serial.print(",");\
-                Serial.print((const char*)__FUNCTION__);\
-                Serial.print("] ");\
+                SerialUSB.print("[LOG Debug: ");\
+                SerialUSB.print((const char*)__FILE__);\
+                SerialUSB.print(",");\
+                SerialUSB.print((unsigned int)__LINE__);\
+                SerialUSB.print(",");\
+                SerialUSB.print((const char*)__FUNCTION__);\
+                SerialUSB.print("] ");\
             }\
-            Serial.print(arg);\
+            SerialUSB.println(arg);\
         }\
     } while(0)
 
@@ -245,6 +245,7 @@ bool WiFiESP::stop(void)
 
 bool WiFiESP::write(const uint8_t *buffer, uint32_t len)
 {
+    logDebug((char *)buffer);
     return sATCIPSENDSingle(buffer, len);
 }
 
@@ -468,6 +469,7 @@ bool WiFiESP::recvFind(String target, uint32_t timeout)
 {
     String data_tmp;
     data_tmp = recvString(target, timeout);
+    logDebug(data_tmp);
     if (data_tmp.indexOf(target) != -1) {
         return true;
     }
@@ -652,16 +654,20 @@ bool WiFiESP::connect(uint8_t mux_id, String protocol, String addr, uint32_t por
 }
 bool WiFiESP::sATCIPSENDSingle(const uint8_t *buffer, uint32_t len)
 {
+    logDebug((char*)buffer);
     rx_empty();
-    m_puart->print("AT+CIPSEND=0,");
+    m_puart->print("AT+CIPSEND=");
     m_puart->println(len);
     if (recvFind(">", 5000)) {
+        logDebug("AT header sent");
         rx_empty();
         for (uint32_t i = 0; i < len; i++) {
             m_puart->write(buffer[i]);
         }
+        logDebug("payload sent");
         return recvFind("SEND OK", 10000);
-    }
+    } 
+    logDebug("error");
     return false;
 }
 bool WiFiESP::sATCIPSENDMultiple(uint8_t mux_id, const uint8_t *buffer, uint32_t len)
